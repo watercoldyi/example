@@ -118,10 +118,11 @@ lglBufferDatai2(lua_State *L){
 static int
 lclear(lua_State *L){
     int color = luaL_checkinteger(L,1);
-    float r = (float)((color & 0xff000000) >> 16);
-    float g = (float)((color & 0xff00) >> 8);
-    float b = (float)(color & 0xff);
-    glClearColor(r,g,b,1.0f);
+    float r = (float)(color >> 24) / 255;
+    float g = (float)((color & 0x00ff0000) >> 16) / 255;
+    float b = (float)((color & 0xff00) >> 8) / 255;
+	float a = (color & 0xff) / 255;
+    glClearColor(r,g,b,a);
     glClear(GL_COLOR_BUFFER_BIT);
     return 0;
 }
@@ -351,8 +352,11 @@ lTexImage2D(lua_State *L){
 	GLenum fmt = luaL_checkinteger(L,7);
 	GLenum type = luaL_checkinteger(L,8);
 	const char *data = NULL;
-	if(lua_type(L,9) == LUA_TSTRING){
+	int dtype = lua_type(L,9);
+	if(dtype == LUA_TSTRING){
 		data = lua_tostring(L,9);
+	} else if(dtype == LUA_TLIGHTUSERDATA){
+		data = lua_touserdata(L,9);	
 	}
 	glTexImage2D(target,level,lfmt,w,h,border,fmt,type,data);
 	CHECK_GL_ERROR(L)
@@ -380,6 +384,28 @@ lPixelStorei(lua_State *L){
 	GLenum name = luaL_checkinteger(L,1);
 	GLint p = luaL_checkinteger(L,2);
 	glPixelStorei(name,p);
+	return 0;
+}
+
+static int
+lEnable(lua_State *L){
+	GLenum type = luaL_checkinteger(L,1);
+	glEnable(type);
+	return 0;
+}
+
+static int
+lDisable(lua_State *L){
+	GLenum type = luaL_checkinteger(L,1);
+	glDisable(type);
+	return 0;
+}
+
+static int
+lBlendFunc(lua_State *L){
+	GLenum sfac = luaL_checkinteger(L,1);
+	GLenum dfac = luaL_checkinteger(L,2);
+	glBlendFunc(sfac,dfac);
 	return 0;
 }
 
@@ -415,6 +441,9 @@ luaopen_gl(lua_State *L){
 		{"glTexImage2D",lTexImage2D},
 		{"glTexSubImage2D",lTexSubImage2D},
 		{"glPixelStorei",lPixelStorei},
+		{"glEnable",lEnable},
+		{"glDisable",lDisable},
+		{"glBlendFunc",lBlendFunc},
         {NULL,NULL}
     };
     luaL_newlib(L,f);
@@ -450,6 +479,9 @@ luaopen_gl(lua_State *L){
     _set_constant(L,"GL_CLAMP_TO_EDGE",GL_CLAMP_TO_EDGE);
     _set_constant(L,"GL_UNPACK_ALIGNMENT",GL_UNPACK_ALIGNMENT);
     _set_constant(L,"GL_ALPHA",GL_ALPHA);
+    _set_constant(L,"GL_BLEND",GL_BLEND);
+    _set_constant(L,"GL_SRC_ALPHA",GL_SRC_ALPHA);
+    _set_constant(L,"GL_ONE_MINUS_SRC_ALPHA",GL_ONE_MINUS_SRC_ALPHA);
     return 1;
 }
 

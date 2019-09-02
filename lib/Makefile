@@ -1,4 +1,6 @@
-all: window.dll gl.dll
+
+TARGET = window.dll gl.dll stbi.dll 
+all: $(TARGET) 
 
 window.dll: lua-window.c
 	gcc --shared -o $@ $^ -luser32 -lgdi32 -llua
@@ -6,5 +8,8 @@ window.dll: lua-window.c
 gl.dll: lua-gl.c ppm.c
 	gcc --shared -o $@ $^ -lgdi32 -lglew32 -lopengl32 -llua
 
-install: gl.dll window.dll
+stbi.dll: lua-stb-image.c
+	gcc --shared -o $@ $^ -llua 
+
+install: $(TARGET) 
 	cp $^ /mingw64/lib/lua/5.3/
